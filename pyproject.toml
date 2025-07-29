@@ -1,0 +1,20 @@
+[project]
+name = "pdf-rag"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "chromadb>=1.0.15",
+    "fastapi>=0.116.1",
+    "langchain-community>=0.3.27",
+    "langchain-huggingface>=0.3.1",
+    "langchain-text-splitters>=0.3.9",
+    "langchain[google-genai]>=0.3.27",
+    "pypdf2>=3.0.1",
+    "python-dotenv>=1.1.1",
+    "python-multipart>=0.0.20",
+    "requests>=2.32.4",
+    "sentence-transformers>=5.0.0",
+    "uvicorn>=0.35.0",
+]
