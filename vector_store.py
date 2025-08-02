@@ -73,8 +73,10 @@ class VectorStore:
             )
         
         # Initialize embeddings model (use ChromaDB default for memory efficiency)
-        # self.embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-        self.embeddings = None  # Use ChromaDB's default embeddings for memory efficiency
+        # For memory optimization on free tier, we'll use ChromaDB's default embedding function
+        # instead of loading heavy models like HuggingFace transformers
+        self.embeddings = None  # Will use ChromaDB's default
+        self.embedding_function = None  # ChromaDB will use default sentence transformers
         
         # Initialize text splitter
         self.text_splitter = RecursiveCharacterTextSplitter(
@@ -163,17 +165,13 @@ class VectorStore:
         
         # Process each chunk
         documents = []
-        embeddings = []
         metadatas = []
         ids = []
         
         for i, chunk in enumerate(chunks):
             chunk_id = f"{doc_id}_chunk_{i}"
             
-            # Generate embedding
-            embedding = self.embeddings.embed_query(chunk)
-            
-            # Prepare metadata
+            # Prepare metadata (no custom embeddings needed)
             chunk_metadata = metadata.copy()
             chunk_metadata.update({
                 "document_id": doc_id,
@@ -182,14 +180,12 @@ class VectorStore:
             })
             
             documents.append(chunk)
-            embeddings.append(embedding)
             metadatas.append(chunk_metadata)
             ids.append(chunk_id)
         
-        # Add to collection
+        # Add to collection (let ChromaDB handle embeddings automatically)
         self.collection.add(
             documents=documents,
-            embeddings=embeddings,
             metadatas=metadatas,
             ids=ids
         )
@@ -198,7 +194,7 @@ class VectorStore:
     
     def similarity_search(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
         """
-        Perform similarity search.
+        Perform similarity search using ChromaDB's built-in functionality.
         
         Args:
             query: Search query
@@ -207,27 +203,28 @@ class VectorStore:
         Returns:
             List of similar documents with metadata
         """
-        # Generate query embedding
-        query_embedding = self.embeddings.embed_query(query)
-        
-        # Search in collection
-        results = self.collection.query(
-            query_embeddings=[query_embedding],
-            n_results=k
-        )
-        
-        # Format results
-        formatted_results = []
-        if results['documents'] and results['documents'][0]:
-            for i in range(len(results['documents'][0])):
-                result = {
-                    "document": results['documents'][0][i],
-                    "metadata": results['metadatas'][0][i],
-                    "distance": results['distances'][0][i] if results['distances'] else None
-                }
-                formatted_results.append(result)
-        
-        return formatted_results
+        try:
+            # Use ChromaDB's built-in query method without custom embeddings
+            results = self.collection.query(
+                query_texts=[query],  # Use query_texts instead of query_embeddings
+                n_results=k
+            )
+            
+            # Format results
+            formatted_results = []
+            if results['documents'] and results['documents'][0]:
+                for i in range(len(results['documents'][0])):
+                    result = {
+                        "document": results['documents'][0][i],
+                        "metadata": results['metadatas'][0][i],
+                        "distance": results['distances'][0][i] if results['distances'] else None
+                    }
+                    formatted_results.append(result)
+            
+            return formatted_results
+        except Exception as e:
+            print(f"Error in similarity search: {e}")
+            return []
     
     def add_medical_document(self, text: str, metadata: Dict[str, Any] = None) -> str:
         """
@@ -260,17 +257,13 @@ class VectorStore:
         
         # Process each chunk
         documents = []
-        embeddings = []
         metadatas = []
         ids = []
         
         for i, chunk in enumerate(chunks):
             chunk_id = f"{doc_id}_chunk_{i}"
             
-            # Generate embedding
-            embedding = self.embeddings.embed_query(chunk)
-            
-            # Prepare metadata
+            # Prepare metadata (no custom embeddings needed)
             chunk_metadata = metadata.copy()
             chunk_metadata.update({
                 "document_id": doc_id,
@@ -279,14 +272,12 @@ class VectorStore:
             })
             
             documents.append(chunk)
-            embeddings.append(embedding)
             metadatas.append(chunk_metadata)
             ids.append(chunk_id)
         
-        # Add to medical documents collection
+        # Add to medical documents collection (let ChromaDB handle embeddings automatically)
         self.medical_docs_collection.add(
             documents=documents,
-            embeddings=embeddings,
             metadatas=metadatas,
             ids=ids
         )
@@ -325,17 +316,13 @@ class VectorStore:
         
         # Process each chunk
         documents = []
-        embeddings = []
         metadatas = []
         ids = []
         
         for i, chunk in enumerate(chunks):
             chunk_id = f"{doc_id}_chunk_{i}"
             
-            # Generate embedding
-            embedding = self.embeddings.embed_query(chunk)
-            
-            # Prepare metadata
+            # Prepare metadata (no custom embeddings needed)
             chunk_metadata = metadata.copy()
             chunk_metadata.update({
                 "document_id": doc_id,
@@ -344,14 +331,12 @@ class VectorStore:
             })
             
             documents.append(chunk)
-            embeddings.append(embedding)
             metadatas.append(chunk_metadata)
             ids.append(chunk_id)
         
-        # Add to patient reports collection
+        # Add to patient reports collection (let ChromaDB handle embeddings automatically)
         self.patient_reports_collection.add(
             documents=documents,
-            embeddings=embeddings,
             metadatas=metadatas,
             ids=ids
         )
@@ -372,12 +357,9 @@ class VectorStore:
         if not hasattr(self, 'medical_docs_collection'):
             self.create_medical_collections()
             
-        # Generate query embedding
-        query_embedding = self.embeddings.embed_query(query)
-        
-        # Search in medical documents collection
+        # Search in medical documents collection (use query_texts instead of query_embeddings)
         results = self.medical_docs_collection.query(
-            query_embeddings=[query_embedding],
+            query_texts=[query],
             n_results=k
         )
         
@@ -408,12 +390,9 @@ class VectorStore:
         if not hasattr(self, 'patient_reports_collection'):
             self.create_medical_collections()
             
-        # Generate query embedding
-        query_embedding = self.embeddings.embed_query(query)
-        
-        # Search in patient reports collection
+        # Search in patient reports collection (use query_texts instead of query_embeddings)
         results = self.patient_reports_collection.query(
-            query_embeddings=[query_embedding],
+            query_texts=[query],
             n_results=k
         )
         
@@ -674,25 +653,22 @@ class VectorStore:
         Returns:
             List of relevant medical documents
         """
-        # Generate query embedding
-        query_embedding = self.embeddings.embed_query(query)
-        
         # Prepare search filters
         where_filter = {"is_medical": True}
         if content_type:
             where_filter["content_types"] = {"$contains": content_type}
         
-        # Search in main collection with medical filter
+        # Search in main collection with medical filter (use query_texts instead of query_embeddings)
         try:
             results = self.collection.query(
-                query_embeddings=[query_embedding],
+                query_texts=[query],
                 n_results=k,
                 where=where_filter
             )
         except:
             # Fallback without where filter if ChromaDB version doesn't support it
             results = self.collection.query(
-                query_embeddings=[query_embedding],
+                query_texts=[query],
                 n_results=k * 2  # Get more results to filter manually
             )
             
