@@ -509,10 +509,18 @@ async def get_system_info():
 def main():
     print("Starting PDF RAG System...")
     print("Make sure to set your GOOGLE_API_KEY environment variable!")
-    print("\nOnce running, you can:")
-    print("- Access the web interface at: http://localhost:8000")
-    print("- View API docs at: http://localhost:8000/docs")
-    uvicorn.run("main:app", host="localhost", port=8000, reload=True)
+    
+    # Get host and port from environment variables for production deployment
+    host = os.getenv("HOST", "localhost")
+    port = int(os.getenv("PORT", 8000))
+    
+    print(f"\nOnce running, you can:")
+    print(f"- Access the web interface at: http://{host}:{port}")
+    print(f"- View API docs at: http://{host}:{port}/docs")
+    
+    # Use reload=False in production
+    reload = os.getenv("ENVIRONMENT", "development") == "development"
+    uvicorn.run("main:app", host=host, port=port, reload=reload)
 
 if __name__ == "__main__":
     main()
