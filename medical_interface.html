@@ -532,6 +532,14 @@
     </div>
 
     <script>
+        // API Configuration
+        const API_BASE_URL = 'https://mental-health-ai-backend-suggestion.onrender.com';
+        
+        // Helper function to build API URLs
+        function buildApiUrl(endpoint) {
+            return `${API_BASE_URL}${endpoint}`;
+        }
+        
         let currentTags = [];
         let currentSymptoms = [];
         
@@ -628,7 +636,7 @@
             formData.append('file', file);
             
             try {
-                const response = await fetch('/upload-medical-pdf', {
+                const response = await fetch(buildApiUrl('/upload-medical-pdf'), {
                     method: 'POST',
                     body: formData
                 });
@@ -713,7 +721,7 @@
             resultDiv.innerHTML = '';
             
             try {
-                const response = await fetch('/upload-medical-document', {
+                const response = await fetch(buildApiUrl('/upload-medical-document'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -772,7 +780,7 @@
                     additional_info: additionalInfo || null
                 };
                 
-                const response = await fetch('/symptom-analysis', {
+                const response = await fetch(buildApiUrl('/symptom-analysis'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -875,7 +883,7 @@
             formData.append('file', file);
             
             try {
-                const response = await fetch('/upload-patient-report', {
+                const response = await fetch(buildApiUrl('/upload-patient-report'), {
                     method: 'POST',
                     body: formData
                 });
@@ -910,7 +918,7 @@
             resultDiv.innerHTML = '';
             
             try {
-                const response = await fetch('/medical-query', {
+                const response = await fetch(buildApiUrl('/medical-query'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -958,7 +966,7 @@
         // Load system stats on page load
         async function loadSystemStats() {
             try {
-                const response = await fetch('/system-info');
+                const response = await fetch(buildApiUrl('/system-info'));
                 const info = await response.json();
                 
                 // Update stats if available
