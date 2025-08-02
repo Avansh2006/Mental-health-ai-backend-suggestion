@@ -7,6 +7,7 @@ gunicorn>=23.0.0
 python-dotenv>=1.1.1
 langchain[google-genai]>=0.3.27
 langchain-community
+langchain-huggingface>=0.3.1
 langchain-text-splitters
 PyPDF2
 chromadb>=0.4.0
