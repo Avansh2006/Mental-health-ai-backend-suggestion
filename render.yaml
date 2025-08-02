@@ -2,10 +2,29 @@ services:
   - type: web
     name: pdf-rag-system
     env: python
+    plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn main_lite:app --host 0.0.0.0 --port $PORT --workers 1
     envVars:
       - key: GOOGLE_API_KEY
         sync: false  # Set this in Render dashboard
       - key: PYTHONPATH
         value: .
+      - key: HOST
+        value: 0.0.0.0
+      - key: ENVIRONMENT
+        value: productionype: web
+    name: pdf-rag-system
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
+    envVars:
+      - key: GOOGLE_API_KEY
+        sync: false  # Set this in Render dashboard
+      - key: PYTHONPATH
+        value: .
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        fromGroup: web

@@ -1,19 +1,15 @@
 # PDF RAG System Requirements
-# Generated from uv dependencies
+# Optimized for Render free tier (512MB RAM limit)
 
 fastapi>=0.116.1
 uvicorn>=0.35.0
-gunicorn>=23.0.0
 python-dotenv>=1.1.1
 langchain[google-genai]>=0.3.27
 langchain-community
-langchain-huggingface>=0.3.1
 langchain-text-splitters
 PyPDF2
 chromadb>=0.4.0
-sentence-transformers
 python-multipart
 
-# Additional useful packages for development
+# Lightweight alternatives for memory optimization
 requests  # For testing API endpoints
-httpx    # For async HTTP requests

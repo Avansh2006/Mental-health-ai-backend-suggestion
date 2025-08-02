@@ -5,7 +5,8 @@ import chromadb
 from chromadb.config import Settings
 from chromadb.api.types import Documents, EmbeddingFunction, Embeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
+# Use OpenAI embeddings instead of HuggingFace for memory efficiency
+from langchain_community.embeddings import OpenAIEmbeddings
 from typing import List, Dict, Any, Optional
 import uuid
 import os
@@ -71,8 +72,9 @@ class VectorStore:
                 settings=Settings(anonymized_telemetry=False)
             )
         
-        # Initialize embeddings model
-        self.embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        # Initialize embeddings model (use ChromaDB default for memory efficiency)
+        # self.embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        self.embeddings = None  # Use ChromaDB's default embeddings for memory efficiency
         
         # Initialize text splitter
         self.text_splitter = RecursiveCharacterTextSplitter(
