@@ -36,6 +36,19 @@ async def method_not_allowed_handler(request, exc):
             "endpoint": str(request.url.path)
         }
     )
+# Custom exception handler for 405 Method Not Allowed
+@app.exception_handler(405)
+async def method_not_allowed_handler(request, exc):
+    return JSONResponse(
+        status_code=405,
+        content={
+            "error": "Method Not Allowed",
+            "message": f"The {request.method} method is not allowed for this endpoint.",
+            "allowed_methods": ["GET", "POST"],
+            "suggestion": "Try visiting the root URL (/) for the web interface or check /docs for API documentation.",
+            "endpoint": str(request.url.path)
+        }
+    )
 
 app.add_middleware(
     CORSMiddleware,
