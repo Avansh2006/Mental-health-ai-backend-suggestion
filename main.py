@@ -22,6 +22,19 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Custom exception handler for 405 Method Not Allowed
+@app.exception_handler(405)
+async def method_not_allowed_handler(request, exc):
+    return JSONResponse(
+        status_code=405,
+        content={
+            "error": "Method Not Allowed",
+            "message": f"The {request.method} method is not allowed for this endpoint.",
+            "allowed_methods": ["GET", "POST"],
+            "suggestion": "Try visiting the root URL (/) for the web interface or check /docs for API documentation.",
+            "endpoint": str(request.url.path)
+        }
+    )
 
 app.add_middleware(
     CORSMiddleware,
@@ -505,6 +518,141 @@ async def get_system_info():
         return info
     except Exception as e:
         return {"error": f"Error getting system info: {str(e)}"}
+
+@app.get("/symptom-analysis", response_class=HTMLResponse)
+async def symptom_analysis_get():
+    """
+    Serve a page explaining how to use the symptom analysis API.
+    """
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Symptom Analysis API</title>
+        <style>
+            body { 
+                font-family: Arial, sans-serif; 
+                max-width: 800px; 
+                margin: 0 auto; 
+                padding: 20px; 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                min-height: 100vh;
+            }
+            .container {
+                background: rgba(255, 255, 255, 0.1);
+                padding: 30px;
+                border-radius: 15px;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            }
+            h1 { color: #ffffff; text-align: center; margin-bottom: 30px; }
+            h2 { color: #f0f0f0; border-bottom: 2px solid #ffffff; padding-bottom: 10px; }
+            .endpoint { 
+                background: rgba(255, 255, 255, 0.2); 
+                padding: 15px; 
+                border-radius: 8px; 
+                margin: 15px 0;
+                border-left: 4px solid #4CAF50;
+            }
+            code { 
+                background: rgba(0, 0, 0, 0.3); 
+                padding: 2px 6px; 
+                border-radius: 4px; 
+                font-family: 'Courier New', monospace;
+            }
+            .button {
+                display: inline-block;
+                background: #4CAF50;
+                color: white;
+                padding: 12px 24px;
+                text-decoration: none;
+                border-radius: 6px;
+                margin: 10px 5px;
+                transition: background 0.3s;
+            }
+            .button:hover { background: #45a049; }
+            pre {
+                background: rgba(0, 0, 0, 0.4);
+                padding: 15px;
+                border-radius: 8px;
+                overflow-x: auto;
+                white-space: pre-wrap;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🏥 Mental Health AI Backend - Symptom Analysis</h1>
+            
+            <h2>Welcome to the Symptom Analysis API!</h2>
+            <p>This endpoint analyzes symptoms and provides potential medical conditions based on our medical knowledge base.</p>
+            
+            <div class="endpoint">
+                <h3>📍 Current Endpoint</h3>
+                <p><strong>POST</strong> <code>/symptom-analysis</code></p>
+                <p>This endpoint requires a POST request with JSON data containing symptoms.</p>
+            </div>
+            
+            <h2>🔧 How to Use</h2>
+            
+            <div class="endpoint">
+                <h3>Example Request:</h3>
+                <pre>
+POST /symptom-analysis
+Content-Type: application/json
+
+{
+  "symptoms": ["headache", "fever", "fatigue"],
+  "additional_info": "Symptoms started 2 days ago",
+  "age": 30,
+  "gender": "male"
+}
+                </pre>
+            </div>
+            
+            <div class="endpoint">
+                <h3>Example Response:</h3>
+                <pre>
+{
+  "conditions": [
+    {
+      "name": "Common Cold",
+      "probability": 0.75,
+      "description": "Viral upper respiratory infection",
+      "symptoms_match": ["headache", "fever", "fatigue"]
+    }
+  ],
+  "general_advice": "Rest and stay hydrated",
+  "emergency_warning": null
+}
+                </pre>
+            </div>
+            
+            <h2>🌐 Available Endpoints</h2>
+            <div class="endpoint">
+                <p><strong>GET</strong> <code>/</code> - Main web interface</p>
+                <p><strong>GET</strong> <code>/health</code> - Health check</p>
+                <p><strong>GET</strong> <code>/system-info</code> - System information</p>
+                <p><strong>POST</strong> <code>/symptom-analysis</code> - Analyze symptoms</p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <a href="/" class="button">🏠 Go to Main Interface</a>
+                <a href="/docs" class="button">📚 View API Documentation</a>
+                <a href="/health" class="button">❤️ Health Check</a>
+            </div>
+            
+            <div style="margin-top: 30px; text-align: center; font-size: 12px; opacity: 0.8;">
+                <p>💡 Tip: Use the main interface at <a href="/" style="color: #ffffff;">the root URL</a> for an interactive experience!</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
 
 def main():
     print("Starting PDF RAG System...")
