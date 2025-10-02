@@ -400,10 +400,14 @@ class VectorStore:
         formatted_results = []
         if results['documents'] and results['documents'][0]:
             for i in range(len(results['documents'][0])):
+                distance = results['distances'][0][i] if results['distances'] and results['distances'][0] else 0
+                similarity = 1 - distance if distance is not None else 1  # Convert distance to similarity
+                
                 result = {
-                    "document": results['documents'][0][i],
+                    "content": results['documents'][0][i],
                     "metadata": results['metadatas'][0][i],
-                    "distance": results['distances'][0][i] if results['distances'] else None
+                    "similarity": similarity,
+                    "distance": distance
                 }
                 formatted_results.append(result)
         
@@ -1004,3 +1008,48 @@ class VectorStore:
                 'medical_documents': 0,
                 'recommendations': ["Try uploading medical PDFs to build your knowledge base"]
             }
+    
+    def add_patient_report_document(self, content: str, metadata: Dict[str, Any] = None) -> str:
+        """
+        Add a patient report document to the patient reports collection.
+        
+        Args:
+            content: The full text content of the patient report
+            metadata: Metadata about the patient report
+            
+        Returns:
+            str: Document ID
+        """
+        return self.add_patient_report(content, metadata)
+    
+    def delete_patient_report(self, report_id: str) -> bool:
+        """
+        Delete all chunks of a patient report by report ID.
+        
+        Args:
+            report_id: The report ID to delete
+            
+        Returns:
+            bool: True if successful
+        """
+        try:
+            if not hasattr(self, 'patient_reports_collection'):
+                self.create_medical_collections()
+            
+            # Get all documents for this report
+            results = self.patient_reports_collection.get(
+                where={"report_id": report_id}
+            )
+            
+            if results['ids']:
+                # Delete all chunks for this report
+                self.patient_reports_collection.delete(ids=results['ids'])
+                print(f"Deleted {len(results['ids'])} chunks for report {report_id}")
+                return True
+            else:
+                print(f"No chunks found for report {report_id}")
+                return False
+                
+        except Exception as e:
+            print(f"Error deleting patient report {report_id}: {e}")
+            return False

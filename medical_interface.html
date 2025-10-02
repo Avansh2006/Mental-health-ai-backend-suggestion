@@ -489,11 +489,16 @@
         <div id="patient-reports" class="tab-content">
             <div class="section">
                 <h2>📋 Upload Patient Report</h2>
-                <p>Upload patient medical reports (PDF) for analysis and consultation.</p>
+                <p>Upload patient medical reports (PDF) for persistent analysis and consultation.</p>
                 
                 <div class="form-group">
                     <label for="patientFile">Patient Report PDF *</label>
                     <input type="file" id="patientFile" accept=".pdf" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reportName">Report Name (optional)</label>
+                    <input type="text" id="reportName" placeholder="e.g., Blood Test Results - John Doe">
                 </div>
                 
                 <button onclick="uploadPatientReport()">
@@ -509,31 +514,42 @@
             </div>
             
             <div class="section">
-                <h2>💬 Medical Consultation</h2>
-                <p>Ask questions about uploaded patient reports and get medical insights.</p>
+                <h2>�️ Uploaded Patient Reports</h2>
+                <p>View and manage your uploaded patient reports.</p>
                 
-                <div class="form-group">
-                    <label for="medicalQuestion">Medical Question</label>
-                    <textarea id="medicalQuestion" placeholder="e.g., What does this blood test indicate? What are the potential diagnoses? What treatment options are recommended?"></textarea>
-                </div>
-                
-                <button onclick="askMedicalQuestion()">
-                    🔍 Get Medical Analysis
+                <button onclick="listPatientReports()">
+                    📋 Refresh Report List
                 </button>
                 
-                <div class="loading" id="queryLoading">
-                    <div class="spinner"></div>
-                    <p>Analyzing medical data...</p>
+                <div id="reportsList"></div>
+            </div>
+            
+            <div class="section">
+                <h2>💬 Patient-Specific Analysis</h2>
+                <p>Ask questions about uploaded patient reports and get analysis based solely on the uploaded content.</p>
+                
+                <div class="form-group">
+                    <label for="patientQuestion">Question about Patient Reports</label>
+                    <textarea id="patientQuestion" placeholder="e.g., What are the key findings in the blood test? What abnormalities are present? What should be monitored?"></textarea>
                 </div>
                 
-                <div id="queryResult"></div>
+                <button onclick="askPatientQuestion()">
+                    🔍 Analyze Patient Reports
+                </button>
+                
+                <div class="loading" id="patientQueryLoading">
+                    <div class="spinner"></div>
+                    <p>Analyzing patient reports...</p>
+                </div>
+                
+                <div id="patientQueryResult"></div>
             </div>
         </div>
     </div>
 
     <script>
         // API Configuration
-        const API_BASE_URL = 'https://mental-health-ai-backend-suggestion.onrender.com';
+        const API_BASE_URL = 'http://localhost:8000';
         
         // Helper function to build API URLs
         function buildApiUrl(endpoint) {
@@ -555,6 +571,11 @@
             }
             document.getElementById(tabName).classList.add("active");
             evt.currentTarget.classList.add("active");
+            
+            // Load patient reports when patient reports tab is opened
+            if (tabName === 'patient-reports') {
+                listPatientReports();
+            }
         }
         
         // Tags functionality
@@ -866,6 +887,7 @@
         
         async function uploadPatientReport() {
             const fileInput = document.getElementById('patientFile');
+            const reportNameInput = document.getElementById('reportName');
             const file = fileInput.files[0];
             
             if (!file) {
@@ -881,9 +903,10 @@
             
             const formData = new FormData();
             formData.append('file', file);
+            formData.append('report_name', reportNameInput.value || file.name);
             
             try {
-                const response = await fetch(buildApiUrl('/upload-patient-report'), {
+                const response = await fetch(buildApiUrl('/patient-report/upload'), {
                     method: 'POST',
                     body: formData
                 });
@@ -891,8 +914,10 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    showResult('patientUploadResult', `✅ ${result.status}\nDocument ID: ${result.document_id}`, 'success');
+                    showResult('patientUploadResult', `✅ ${result.message}\nReport ID: ${result.report_id}`, 'success');
                     fileInput.value = '';
+                    reportNameInput.value = '';
+                    listPatientReports(); // Refresh the list
                 } else {
                     showResult('patientUploadResult', `❌ Error: ${result.detail}`, 'error');
                 }
@@ -903,55 +928,141 @@
             }
         }
         
-        async function askMedicalQuestion() {
-            const question = document.getElementById('medicalQuestion').value;
-            
-            if (!question.trim()) {
-                showResult('queryResult', 'Please enter a medical question.', 'error');
+        async function listPatientReports() {
+            try {
+                const response = await fetch(buildApiUrl('/patient-report/list'));
+                const reports = await response.json();
+                
+                const listDiv = document.getElementById('reportsList');
+                
+                if (reports.length === 0) {
+                    listDiv.innerHTML = '<p>No patient reports uploaded yet.</p>';
+                    return;
+                }
+                
+                let html = '<h4>📋 Available Patient Reports:</h4>';
+                reports.forEach(report => {
+                    html += `
+                        <div class="report-item" style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; background: #f9f9f9;">
+                            <h5>${report.name}</h5>
+                            <p><strong>ID:</strong> ${report.id}</p>
+                            <p><strong>Uploaded:</strong> ${new Date(report.timestamp).toLocaleString()}</p>
+                            <p><strong>Pages:</strong> ${report.pages || 'N/A'}</p>
+                            <button onclick="getReportSummary('${report.id}')" style="margin-right: 10px;">📄 Get Summary</button>
+                            <button onclick="deleteReport('${report.id}')">🗑️ Delete</button>
+                        </div>
+                    `;
+                });
+                
+                listDiv.innerHTML = html;
+            } catch (error) {
+                showResult('reportsList', `❌ Error loading reports: ${error.message}`, 'error');
+            }
+        }
+        
+        async function getReportSummary(reportId) {
+            try {
+                const response = await fetch(buildApiUrl(`/patient-report/summary/${reportId}`));
+                const result = await response.json();
+                
+                if (response.ok) {
+                    const summaryHTML = `
+                        <div style="border: 1px solid #4CAF50; padding: 15px; margin: 10px 0; border-radius: 8px; background: #f0f8f0;">
+                            <h4>📄 Report Summary</h4>
+                            <p><strong>Report:</strong> ${result.report_name}</p>
+                            <div style="background: white; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                                ${result.summary}
+                            </div>
+                        </div>
+                    `;
+                    showResult('reportsList', summaryHTML, 'success');
+                } else {
+                    showResult('reportsList', `❌ Error: ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                showResult('reportsList', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function deleteReport(reportId) {
+            if (!confirm('Are you sure you want to delete this report?')) {
                 return;
             }
             
-            const loading = document.getElementById('queryLoading');
-            const resultDiv = document.getElementById('queryResult');
+            try {
+                const response = await fetch(buildApiUrl(`/patient-report/${reportId}`), {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    listPatientReports(); // Refresh the list
+                    showResult('reportsList', '✅ Report deleted successfully', 'success');
+                } else {
+                    const result = await response.json();
+                    showResult('reportsList', `❌ Error: ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                showResult('reportsList', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function askPatientQuestion() {
+            const question = document.getElementById('patientQuestion').value;
+            
+            if (!question.trim()) {
+                showResult('patientQueryResult', 'Please enter a question about patient reports.', 'error');
+                return;
+            }
+            
+            const loading = document.getElementById('patientQueryLoading');
+            const resultDiv = document.getElementById('patientQueryResult');
             
             loading.style.display = 'block';
             resultDiv.innerHTML = '';
             
             try {
-                const response = await fetch(buildApiUrl('/medical-query'), {
+                const response = await fetch(buildApiUrl('/patient-report/query'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        question: question,
-                        max_results: 5
+                        question: question
                     })
                 });
                 
                 const result = await response.json();
                 
                 if (response.ok) {
-                    let resultHTML = `<h3>🔍 Medical Analysis</h3><p><strong>Question:</strong> ${result.question}</p><p><strong>Answer:</strong></p><p>${result.answer}</p>`;
+                    let resultHTML = `
+                        <h3>🔍 Patient Report Analysis</h3>
+                        <p><strong>Question:</strong> ${result.question}</p>
+                        <p><strong>Answer:</strong></p>
+                        <div style="background: white; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                            ${result.answer.replace(/\n/g, '<br>')}
+                        </div>
+                    `;
                     
                     if (result.sources && result.sources.length > 0) {
-                        resultHTML += '<h4>📚 Medical Sources:</h4>';
+                        resultHTML += '<h4>📚 Source Documents:</h4>';
                         result.sources.forEach((source, index) => {
-                            resultHTML += `<div class="source">
-                                <strong>Source ${index + 1}:</strong> ${source.metadata.document_type || 'Document'}<br>
-                                <em>Relevance: ${(source.similarity * 100).toFixed(1)}%</em><br>
-                                ${source.content}
-                            </div>`;
+                            resultHTML += `
+                                <div class="source" style="border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 5px; background: #f9f9f9;">
+                                    <strong>Source ${index + 1}:</strong> ${source.metadata.report_name || 'Patient Report'}<br>
+                                    <em>Relevance: ${(source.similarity * 100).toFixed(1)}%</em><br>
+                                    <div style="margin-top: 5px; font-size: 0.9em;">${source.content}</div>
+                                </div>
+                            `;
                         });
                     }
                     
-                    resultHTML += `<p><em>Context used: ${result.context_used} medical documents</em></p>`;
-                    showResult('queryResult', resultHTML, 'success');
+                    resultHTML += `<p><em>Analysis based on ${result.reports_used || 0} patient reports</em></p>`;
+                    showResult('patientQueryResult', resultHTML, 'success');
                 } else {
-                    showResult('queryResult', `❌ Error: ${result.detail}`, 'error');
+                    showResult('patientQueryResult', `❌ Error: ${result.detail}`, 'error');
                 }
             } catch (error) {
-                showResult('queryResult', `❌ Error: ${error.message}`, 'error');
+                showResult('patientQueryResult', `❌ Error: ${error.message}`, 'error');
             } finally {
                 loading.style.display = 'none';
             }

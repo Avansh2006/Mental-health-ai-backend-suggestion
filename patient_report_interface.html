@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Report Analysis System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .section {
+            background: white;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e6ed;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .button:hover {
+            background: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+        }
+
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .reports-list {
+            margin-top: 20px;
+        }
+
+        .report-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .report-item h4 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .report-item p {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin: 2px 0;
+        }
+
+        .sources {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .source {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .source strong {
+            color: #2c3e50;
+        }
+
+        .source em {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .stats {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Patient Report Analysis System</h1>
+            <p>Upload patient reports and get AI-powered analysis based on your documents</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Statistics Section -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="reportsCount">0</div>
+                    <div class="stat-label">Patient Reports</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="analysisCount">0</div>
+                    <div class="stat-label">Analyses Performed</div>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="section">
+                <h2>📄 Upload Patient Report</h2>
+                <p style="margin-bottom: 20px; color: #7f8c8d;">Upload a patient medical report (PDF) for analysis. The file will be saved locally and persist between sessions.</p>
+                
+                <div class="form-group">
+                    <label for="patientFile">Patient Report PDF *</label>
+                    <input type="file" id="patientFile" accept=".pdf" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="patientName">Patient Name (Optional)</label>
+                    <input type="text" id="patientName" placeholder="e.g., John Doe">
+                </div>
+                
+                <div class="form-group">
+                    <label for="patientId">Patient ID (Optional)</label>
+                    <input type="text" id="patientId" placeholder="e.g., P-12345">
+                </div>
+                
+                <button class="button" onclick="uploadPatientReport()">
+                    📤 Upload Patient Report
+                </button>
+                
+                <div class="loading" id="uploadLoading">
+                    <div class="spinner"></div>
+                    <p>Processing patient report...</p>
+                </div>
+                
+                <div id="uploadResult"></div>
+            </div>
+
+            <!-- Analysis Section -->
+            <div class="section">
+                <h2>🔍 Analyze Patient Reports</h2>
+                <p style="margin-bottom: 20px; color: #7f8c8d;">Ask questions about your uploaded patient reports. The AI will analyze and answer based only on the content of your uploaded documents.</p>
+                
+                <div class="form-group">
+                    <label for="analysisQuestion">Your Question</label>
+                    <textarea id="analysisQuestion" placeholder="e.g., What are the key findings in the blood test? What diagnosis is suggested? What treatment recommendations are mentioned?"></textarea>
+                </div>
+                
+                <button class="button" onclick="analyzeReports()">
+                    🧠 Analyze Reports
+                </button>
+                
+                <div class="loading" id="analysisLoading">
+                    <div class="spinner"></div>
+                    <p>Analyzing patient reports...</p>
+                </div>
+                
+                <div id="analysisResult"></div>
+            </div>
+
+            <!-- Reports List Section -->
+            <div class="section">
+                <h2>📋 Uploaded Reports</h2>
+                <button class="button" onclick="loadReportsList()">
+                    🔄 Refresh List
+                </button>
+                
+                <div id="reportsList" class="reports-list">
+                    <!-- Reports will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = 'http://localhost:8000';
+        let analysisCounter = 0;
+
+        // Load initial data
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            loadReportsList();
+        });
+
+        async function uploadPatientReport() {
+            const fileInput = document.getElementById('patientFile');
+            const patientName = document.getElementById('patientName').value.trim();
+            const patientId = document.getElementById('patientId').value.trim();
+            
+            if (!fileInput.files[0]) {
+                showResult('uploadResult', 'Please select a PDF file.', 'error');
+                return;
+            }
+
+            const loading = document.getElementById('uploadLoading');
+            const resultDiv = document.getElementById('uploadResult');
+            
+            loading.style.display = 'block';
+            resultDiv.innerHTML = '';
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            if (patientName) formData.append('patient_name', patientName);
+            if (patientId) formData.append('patient_id', patientId);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/patient-report/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showResult('uploadResult', `✅ ${result.message}\n📊 Report ID: ${result.report_id}\n📝 Text Length: ${result.text_length} characters`, 'success');
+                    
+                    // Clear form
+                    fileInput.value = '';
+                    document.getElementById('patientName').value = '';
+                    document.getElementById('patientId').value = '';
+                    
+                    // Refresh stats and list
+                    loadStats();
+                    loadReportsList();
+                } else {
+                    showResult('uploadResult', `❌ Error: ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                showResult('uploadResult', `❌ Error: ${error.message}`, 'error');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        async function analyzeReports() {
+            const question = document.getElementById('analysisQuestion').value.trim();
+            
+            if (!question) {
+                showResult('analysisResult', 'Please enter a question.', 'error');
+                return;
+            }
+
+            const loading = document.getElementById('analysisLoading');
+            const resultDiv = document.getElementById('analysisResult');
+            
+            loading.style.display = 'block';
+            resultDiv.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/patient-report/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: question,
+                        max_results: 5
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    analysisCounter++;
+                    document.getElementById('analysisCount').textContent = analysisCounter;
+                    
+                    let resultHTML = `
+                        <div class="success">
+                            <h3>🔍 Analysis Results</h3>
+                            <p><strong>Question:</strong> ${result.question}</p>
+                            <p><strong>Answer:</strong></p>
+                            <p>${result.answer}</p>
+                            <p><em>Based on ${result.context_used} relevant sections from ${result.reports_available} patient report(s)</em></p>
+                        </div>
+                    `;
+                    
+                    if (result.sources && result.sources.length > 0) {
+                        resultHTML += '<div class="sources"><h4>📄 Source Information:</h4>';
+                        result.sources.forEach((source, index) => {
+                            resultHTML += `
+                                <div class="source">
+                                    <strong>Source ${index + 1}:</strong><br>
+                                    <em>Report: ${source.metadata.filename || 'Unknown'} | Relevance: ${(source.similarity * 100).toFixed(1)}%</em><br>
+                                    ${source.content}
+                                </div>
+                            `;
+                        });
+                        resultHTML += '</div>';
+                    }
+                    
+                    resultDiv.innerHTML = resultHTML;
+                } else {
+                    showResult('analysisResult', `❌ Error: ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                showResult('analysisResult', `❌ Error: ${error.message}`, 'error');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/patient-report/summary`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('reportsCount').textContent = result.total_reports;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadReportsList() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/patient-report/list`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    const listDiv = document.getElementById('reportsList');
+                    
+                    if (result.reports.length === 0) {
+                        listDiv.innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 20px;">No patient reports uploaded yet.</p>';
+                        return;
+                    }
+                    
+                    let listHTML = '';
+                    result.reports.forEach(report => {
+                        const uploadDate = new Date(report.upload_date).toLocaleString();
+                        listHTML += `
+                            <div class="report-item">
+                                <h4>📄 ${report.filename}</h4>
+                                <p><strong>Report ID:</strong> ${report.report_id}</p>
+                                <p><strong>Patient:</strong> ${report.patient_name || 'Not specified'}</p>
+                                <p><strong>Patient ID:</strong> ${report.patient_id || 'Not specified'}</p>
+                                <p><strong>Uploaded:</strong> ${uploadDate}</p>
+                                <p><strong>Text Length:</strong> ${report.text_length} characters</p>
+                            </div>
+                        `;
+                    });
+                    
+                    listDiv.innerHTML = listHTML;
+                }
+            } catch (error) {
+                console.error('Error loading reports list:', error);
+                document.getElementById('reportsList').innerHTML = '<p class="error">Error loading reports list.</p>';
+            }
+        }
+
+        function showResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${type}">${message.replace(/\n/g, '<br>')}</div>`;
+        }
+    </script>
+</body>
+</html>
