@@ -419,20 +419,49 @@ async def symptom_analysis(request: SymptomAnalysisRequest):
         print(f"📊 Medical docs results: {len(medical_results)}")
         print(f"📊 Patient reports results: {len(patient_results)}")
         print(f"📊 Total results: {len(all_results)}")
-        if all_results:
-            print(f"📄 First result preview: {all_results[0]['document'][:100]}...")
         
         # Prepare context for analysis
         context_docs = []
-        for result in all_results:
-            context_docs.append(result["document"])
+        for i, result in enumerate(all_results):
+            try:
+                if isinstance(result, dict):
+                    if "document" in result:
+                        context_docs.append(result["document"])
+                        if i == 0:  # Preview first result
+                            print(f"📄 First result preview: {result['document'][:100]}...")
+                    elif "text" in result:
+                        context_docs.append(result["text"])
+                    else:
+                        print(f"⚠️ Unexpected result structure: {list(result.keys())}")
+                else:
+                    print(f"⚠️ Result is not a dictionary: {type(result)}")
+            except Exception as e:
+                print(f"❌ Error processing result {i}: {e}")
+                continue
+        
+        print(f"📝 Context documents found: {len(context_docs)}")
         
         if not context_docs:
             # Fallback response when no medical data is available
+            print("⚠️ No context documents found, using general medical knowledge")
             return SymptomAnalysisResponse(
-                conditions=[],
-                general_advice="No medical data available. Please upload medical documents first to get accurate analysis.",
-                emergency_warning="If you have severe symptoms, please consult a healthcare professional immediately."
+                conditions=[
+                    SuggestedCondition(
+                        name="General Medical Consultation",
+                        probability=90,
+                        severity="medium",
+                        recommendations=[
+                            "Consult with a healthcare professional for proper diagnosis",
+                            "Keep a symptom diary noting when symptoms occur",
+                            "Monitor symptom severity and duration",
+                            "Seek immediate care if symptoms worsen"
+                        ],
+                        specialists=["General Practitioner", "Family Medicine Doctor"],
+                        urgency="routine"
+                    )
+                ],
+                general_advice=f"Based on the symptoms you've reported ({', '.join(request.symptoms)}), it's recommended to consult with a healthcare professional for proper evaluation. While I don't have specific medical documents to reference, these symptoms should be evaluated by a qualified medical professional.",
+                emergency_warning="If you experience severe symptoms, difficulty breathing, chest pain, or any life-threatening symptoms, seek emergency medical attention immediately."
             )
         
         # Create detailed prompt for symptom analysis
