@@ -138,29 +138,24 @@ class PatientReportQueryResponse(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
-    """Serve the main web interface."""
+    """Serve the medical web interface."""
     try:
-        with open("web_interface.html", "r", encoding="utf-8") as f:
+        with open("medical_interface.html", "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
-        try:
-            with open("medical_interface.html", "r", encoding="utf-8") as f:
-                return HTMLResponse(content=f.read())
-        except FileNotFoundError:
-            return {
-                "message": "Mental Health AI Backend API",
-                "version": "1.0.0", 
-                "status": "running",
-                "endpoints": {
-                    "upload": "/upload-pdf",
-                    "upload-medical": "/upload-medical-document", 
-                    "upload-patient-report": "/upload-patient-report",
-                    "query": "/query",
-                    "medical-query": "/medical-query",
-                    "health": "/health",
-                    "system-info": "/system-info"
-                }
+        return {
+            "message": "Medical PDF RAG System API",
+            "version": "1.0.0",
+            "endpoints": {
+                "upload": "/upload-pdf",
+                "upload-medical": "/upload-medical-document", 
+                "upload-patient-report": "/upload-patient-report",
+                "query": "/query",
+                "medical-query": "/medical-query",
+                "health": "/health",
+                "system-info": "/system-info"
             }
+        }
 
 @app.post("/upload-pdf", response_model=DocumentResponse)
 async def upload_pdf(file: UploadFile = File(...)):
@@ -392,17 +387,29 @@ async def symptom_analysis(request: SymptomAnalysisRequest):
         
         # Create search query from symptoms
         symptoms_text = " ".join(request.symptoms)
-        search_query = symptoms_text  # Remove "symptoms:" prefix
+        search_query = symptoms_text
         
         # Add additional context if provided
         if request.additional_info:
             search_query += f" {request.additional_info}"
         
+        print(f"🔍 Processing symptom analysis for: {symptoms_text}")
+        
         # Search medical documents for relevant conditions
-        medical_results = vector_store.search_medical_documents(search_query, k=5) or []
+        try:
+            medical_results = vector_store.search_medical_documents(search_query, k=5) or []
+            print(f"📊 Medical docs results: {len(medical_results)}")
+        except Exception as e:
+            print(f"❌ Error searching medical documents: {e}")
+            medical_results = []
         
         # Also search patient reports collection since medical knowledge is stored there
-        patient_results = vector_store.search_patient_reports(search_query, k=5) or []
+        try:
+            patient_results = vector_store.search_patient_reports(search_query, k=5) or []
+            print(f"📊 Patient reports results: {len(patient_results)}")
+        except Exception as e:
+            print(f"❌ Error searching patient reports: {e}")
+            patient_results = []
         
         # Combine results
         all_results = medical_results + patient_results
@@ -460,7 +467,13 @@ Please analyze these symptoms and provide a response in the following JSON forma
 Provide 3-5 most likely conditions based on the symptoms. Be conservative with probability scores and always recommend professional medical consultation. Include emergency warning if symptoms suggest urgent care is needed."""
         
         # Generate analysis using RAG system
-        response = rag_system.llm.invoke(analysis_prompt).content
+        print("🤖 Generating AI analysis...")
+        try:
+            response = rag_system.llm.invoke(analysis_prompt).content
+            print(f"✅ AI response received: {len(response)} characters")
+        except Exception as e:
+            print(f"❌ Error calling AI model: {e}")
+            raise HTTPException(status_code=500, detail=f"AI model error: {str(e)}")
         
         # Try to parse JSON response
         import json
@@ -475,9 +488,11 @@ Provide 3-5 most likely conditions based on the symptoms. Be conservative with p
                 json_end = response.rfind("}") + 1
                 json_str = response[json_start:json_end]
             else:
+                print(f"⚠️ No JSON found in response: {response[:200]}...")
                 raise ValueError("No JSON found in response")
             
             parsed_response = json.loads(json_str)
+            print("✅ JSON parsed successfully")
             
             # Convert to our response model
             conditions = []
@@ -499,6 +514,8 @@ Provide 3-5 most likely conditions based on the symptoms. Be conservative with p
             )
             
         except (json.JSONDecodeError, ValueError) as e:
+            print(f"⚠️ JSON parsing failed: {e}")
+            print(f"Raw response: {response[:500]}...")
             # Fallback if JSON parsing fails
             return SymptomAnalysisResponse(
                 conditions=[
@@ -518,6 +535,9 @@ Provide 3-5 most likely conditions based on the symptoms. Be conservative with p
     except HTTPException:
         raise
     except Exception as e:
+        print(f"❌ Unexpected error in symptom analysis: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error analyzing symptoms: {str(e)}")
 
 @app.delete("/documents/{document_id}")
