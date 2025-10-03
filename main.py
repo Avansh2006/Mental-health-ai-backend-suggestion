@@ -138,24 +138,29 @@ class PatientReportQueryResponse(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
-    """Serve the medical web interface."""
+    """Serve the main web interface."""
     try:
-        with open("medical_interface.html", "r", encoding="utf-8") as f:
+        with open("web_interface.html", "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
-        return {
-            "message": "Medical PDF RAG System API",
-            "version": "1.0.0",
-            "endpoints": {
-                "upload": "/upload-pdf",
-                "upload-medical": "/upload-medical-document", 
-                "upload-patient-report": "/upload-patient-report",
-                "query": "/query",
-                "medical-query": "/medical-query",
-                "health": "/health",
-                "system-info": "/system-info"
+        try:
+            with open("medical_interface.html", "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read())
+        except FileNotFoundError:
+            return {
+                "message": "Mental Health AI Backend API",
+                "version": "1.0.0", 
+                "status": "running",
+                "endpoints": {
+                    "upload": "/upload-pdf",
+                    "upload-medical": "/upload-medical-document", 
+                    "upload-patient-report": "/upload-patient-report",
+                    "query": "/query",
+                    "medical-query": "/medical-query",
+                    "health": "/health",
+                    "system-info": "/system-info"
+                }
             }
-        }
 
 @app.post("/upload-pdf", response_model=DocumentResponse)
 async def upload_pdf(file: UploadFile = File(...)):
