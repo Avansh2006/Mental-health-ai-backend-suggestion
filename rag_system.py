@@ -14,7 +14,7 @@ load_dotenv()
 class RAGSystem:
     """Main RAG system that combines retrieval and generation."""
     
-    def __init__(self, vector_store: VectorStore, model_name: str = "gemini-2.0-flash"):
+    def __init__(self, vector_store: VectorStore, model_name: str = None):
         """
         Initialize the RAG system.
         
@@ -23,6 +23,9 @@ class RAGSystem:
             model_name: Name of the language model to use
         """
         self.vector_store = vector_store
+        
+        # Initialize the language model
+        model_name = model_name or os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         
         # Initialize the language model
         api_key = os.getenv("GOOGLE_API_KEY")

@@ -202,8 +202,9 @@ class PatientReportManager:
                     "reports_available": len(self.reports_index)
                 }
             
+            model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
             llm = ChatGoogleGenerativeAI(
-                model="gemini-2.0-flash",
+                model=model_name,
                 google_api_key=api_key,
                 temperature=0.7
             )
